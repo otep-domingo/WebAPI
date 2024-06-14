@@ -3,6 +3,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using WebAPI.Data;
 using WebAPI.Model;
 
 namespace WebAPI.Controllers
@@ -11,20 +12,40 @@ namespace WebAPI.Controllers
     [ApiController]
     public class AuthenticationController : Controller
     {
+        private readonly DbContextClass _context;
+
+        public AuthenticationController(DbContextClass context)
+        {
+            _context = context;
+        }
+
         [HttpPost("login")]
         public IActionResult Login([FromBody] Login user)
         {
+            var ulist = _context.User.ToList();
+            var authUser = new User();
+            authUser = ulist.Find(x => x.Username.Equals(user.UserName) &&
+            x.Password.Equals(user.Password));
+
+
             if (user is null)
             {
                 return BadRequest("Invalid user request!!!");
             }
-            if (user.UserName == "Jaydeep" && user.Password == "Pass@777")
+            if(authUser is null)
             {
+                return BadRequest("Invalid username and/or password.");
+            }
+            //if (user.UserName == "Jaydeep" && user.Password == "Pass@777")
+            else
+            {
+                
                 var secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(ConfigurationManager.AppSetting["JWT:Secret"]));
                 var signinCredentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
                 var c = new List<Claim>
                 {
-                    new Claim("user","Jaydeep")
+                    new Claim("user",authUser.Firstname + " " + authUser.Lastname),
+                    new Claim("username", authUser.Username)
                 };
 
  
